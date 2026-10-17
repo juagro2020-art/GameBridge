@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 3rem auto; text-align: center; padding: 2.5rem 1.5rem;">
+  <span style="font-size: 3rem; margin-bottom: 1rem; display: block;">📶</span>
+  <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">{{ t('offline_notice', locale) }}</h1>
+  <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+    Your mobile internet connection appears to be unavailable. Static platform pages and previously cached passport data are accessible, but new match result submissions require a connection.
+  </p>
+  <button onclick="window.location.reload()" class="btn btn-primary" style="align-self: center;">
+    🔄 Retry Connection
+  </button>
+</div>
+{% endblock %}

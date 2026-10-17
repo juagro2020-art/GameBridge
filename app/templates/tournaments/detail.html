@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <a href="/tournaments" style="font-size: 0.85rem; color: var(--accent-gold);">&larr; Back to Tournaments</a>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem;">
+    <div>
+      <h1 style="font-size: 1.6rem;">{{ tournament.name }}</h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        📍 {{ tournament.city }} &bull; 🎮 {{ tournament.game_key | upper }} ({{ tournament.mode }})
+      </p>
+    </div>
+    <div>
+      <span class="badge {% if tournament.status == 'completed' %}badge-gray{% elif tournament.status == 'in_progress' %}badge-gold{% else %}badge-green{% endif %}">
+        {{ tournament.status | replace('_', ' ') | title }}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Actions Banner -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Participants: <strong>{{ participants | length }}</strong> / {{ tournament.max_participants }}
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Prize: <strong>{{ tournament.prize_description }}</strong> (Free Entry)
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem;">
+      {% if tournament.status == 'registration_open' %}
+        {% if is_registered %}
+          <span class="badge badge-green" style="padding: 0.5rem 0.75rem;">✓ Registered</span>
+        {% elif current_user %}
+          <button onclick="joinTournament()" class="btn btn-primary btn-sm">
+            {{ t('btn_join_tournament', locale) }}
+          </button>
+        {% else %}
+          <a href="/login" class="btn btn-primary btn-sm">Login to Join</a>
+        {% endif %}
+
+        {% if current_user and current_user.role in ['hub_captain', 'super_admin'] and participants | length >= 2 %}
+          <button onclick="startTournament()" class="btn btn-success btn-sm">
+            ⚡ Start & Seed Bracket
+          </button>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Bracket View -->
+<div style="margin-top: 2rem;">
+  <h2 style="font-size: 1.3rem; margin-bottom: 1rem;">Single-Elimination Bracket</h2>
+
+  {% if rounds %}
+    <div class="bracket-scroll" aria-label="Single-elimination tournament rounds">
+      {% for round_num, round_matches in rounds.items() %}
+        <section class="bracket-column">
+          <h3 style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase;">
+            {% if loop.last %}🏆 Final{% elif round_num == (rounds | length - 1) %}Semifinals{% else %}Round {{ round_num }}{% endif %}
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for m in round_matches %}
+              <a class="bracket-match" href="/matches/{{ m.id }}">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                  <span>Match #{{ m.match_number }}</span>
+                  <span class="badge {% if m.status == 'completed' %}badge-green{% elif m.status == 'disputed' %}badge-red{% else %}badge-gold{% endif %}">
+                    {{ m.status }}
+                  </span>
+                </div>
+
+                <!-- Player 1 -->
+                <div class="bracket-player {% if m.winner_id and m.winner_id == m.player1_id %}winner{% endif %}">
+                  <span>{{ m.p1_name or (m.is_bye and 'BYE' or 'TBD') }}</span>
+                  {% if m.winner_id and m.winner_id == m.player1_id %}<span>✓</span>{% endif %}
+                </div>
+
+                <!-- Player 2 -->
+                <div class="bracket-player {% if m.winner_id and m.winner_id == m.player2_id %}winner{% endif %}">
+                  <span>{{ m.p2_name or (m.is_bye and 'BYE' or 'TBD') }}</span>
+                  {% if m.winner_id and m.winner_id == m.player2_id %}<span>✓</span>{% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 2rem;">
+      <p style="color: var(--text-muted);">The bracket will be generated when registrations close or the Hub Captain starts the tournament.</p>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+async function joinTournament() {
+  try {
+    const res = await fetch('/api/tournaments/{{ tournament.id }}/join', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      showToast(data.detail || 'Could not join tournament', 'error');
+    }
+  } catch (e) {
+    showToast('Network error while joining tournament.', 'error');
+  }
+}
+
+async function startTournament() {
+  if (!confirm('Start tournament and generate seeded bracket?')) return;
+  try {
+    const res = await fetch('/api/tournaments/{{ tournament.id }}/start', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      showToast(data.detail || 'Could not start tournament', 'error');
+    }
+  } catch (e) {
+    showToast('Network error while starting tournament.', 'error');
+  }
+}
+</script>
+{% endblock %}

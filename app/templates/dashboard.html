@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="player-header">
+  <div class="player-identity">
+    <span class="player-avatar" aria-hidden="true">{{ current_user.display_name[:1] | upper }}</span>
+    <div>
+      <h1>{{ current_user.display_name }}</h1>
+      <p>{{ current_user.city }} <span aria-hidden="true">·</span> {{ current_user.public_identifier }}</p>
+    </div>
+  </div>
+  <div class="player-actions">
+    <a href="/p/{{ current_user.public_identifier }}" class="btn btn-outline btn-sm">{{ t('nav_passport', locale) }}</a>
+    <a href="/account/link" class="btn btn-primary btn-sm">{{ t('btn_verify_account', locale) }}</a>
+  </div>
+</div>
+
+<div class="grid dashboard-grid">
+  <!-- Rating & Stats Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">{{ t('label_elo', locale) }}</h3>
+      <span class="badge badge-gold">{{ platform_rating.tier if platform_rating else 'Bronze' }}</span>
+    </div>
+    <div style="display: flex; align-items: baseline; gap: 0.75rem;">
+      <span style="font-size: 2.2rem; font-weight: 800; color: var(--accent-gold);">
+        {{ (platform_rating.elo | int) if platform_rating else 1200 }}
+      </span>
+      <span style="color: var(--text-muted); font-size: 0.9rem;">{{ t('dashboard_rating_mode', locale) }}</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      {{ t('label_matches', locale) }}: <strong>{{ platform_rating.matches_played if platform_rating else 0 }}</strong>
+    </div>
+  </div>
+
+  <!-- Linked Game Accounts -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">{{ t('dashboard_accounts', locale) }}</h3>
+      <a href="/account/link" class="text-link">+ {{ t('dashboard_add_account', locale) }}</a>
+    </div>
+    {% if game_accounts %}
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        {% for acc in game_accounts %}
+          <div class="account-row">
+            <div>
+              <strong>{{ acc.game_key | upper }}</strong>: <span>{{ acc.external_username }}</span>
+            </div>
+            {% if acc.status == 'verified' %}
+              <span class="badge badge-green">{{ t('status_verified', locale) }}</span>
+            {% else %}
+              <a href="/account/link" class="badge badge-gold">{{ t('status_pending', locale) }}</a>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.9rem;">{{ t('dashboard_no_accounts', locale) }}</p>
+      <a href="/account/link" class="btn btn-outline btn-sm" style="align-self: flex-start;">{{ t('dashboard_link_account', locale) }}</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tournaments Section -->
+<div class="dashboard-tournaments">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+    <h2 style="font-size: 1.25rem;">{{ t('dashboard_tournaments', locale) }}</h2>
+    <a href="/tournaments" class="btn btn-outline btn-sm">{{ t('nav_tournaments', locale) }}</a>
+  </div>
+
+  {% if user_tournaments %}
+    <div class="grid">
+      {% for t in user_tournaments %}
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ t.name }}</h3>
+            <span class="badge {% if t.status == 'completed' %}badge-gray{% elif t.status == 'in_progress' %}badge-gold{% elif t.status == 'cancelled' %}badge-red{% else %}badge-green{% endif %}">{{ t.status | replace('_', ' ') | title }}</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">{{ t.city }} &bull; {{ t.game_key }} ({{ t.mode }})</p>
+          <a href="/tournaments/{{ t.slug }}" class="btn btn-primary btn-sm" style="align-self: flex-start;">Open Bracket & Room</a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 2rem;">
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">{{ t('dashboard_empty_tournaments', locale) }}</p>
+      <a href="/tournaments" class="btn btn-primary" style="align-self: center;">{{ t('nav_tournaments', locale) }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

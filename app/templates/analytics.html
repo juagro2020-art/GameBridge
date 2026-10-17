@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <span class="badge badge-gold" style="margin-bottom: 0.25rem;">Real-Time Operational Intelligence</span>
+  <h1 style="font-size: 1.6rem;">{{ t('nav_analytics', locale) }}</h1>
+  <p style="color: var(--text-muted); font-size: 0.9rem;">
+    Key metrics computed directly from active database records. Definitions and denominators explicitly stated.
+  </p>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Total Registrations</h3>
+      <span class="badge badge-gold">Users</span>
+    </div>
+    <div style="font-size: 2.2rem; font-weight: 800; color: var(--accent-gold);">
+      {{ metrics.total_registrations }}
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+      Breakdown: <strong>{{ metrics.demo_registrations }}</strong> Demo | <strong>{{ metrics.pilot_registrations }}</strong> Real Pilot
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Match Completion Rate</h3>
+      <span class="badge badge-green">Integrity</span>
+    </div>
+    <div style="font-size: 2.2rem; font-weight: 800; color: var(--accent-green);">
+      {{ metrics.match_completion_rate }}%
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+      {{ metrics.completed_matches }} completed out of {{ metrics.total_contested_matches }} non-bye matches
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Dispute Rate</h3>
+      <span class="badge badge-blue">Fair Play</span>
+    </div>
+    <div style="font-size: 2.2rem; font-weight: 800; color: #60a5fa;">
+      {{ metrics.dispute_rate }}%
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+      {{ metrics.total_disputes }} disputes filed across {{ metrics.total_contested_matches }} matches
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Competitor Retention</h3>
+      <span class="badge badge-gold">Engagement</span>
+    </div>
+    <div style="display: flex; gap: 1.5rem; align-items: baseline;">
+      <div>
+        <span style="font-size: 1.8rem; font-weight: bold; color: var(--text-main);">{{ metrics.day_1_return_rate }}%</span>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Day-1 Return</div>
+      </div>
+      <div>
+        <span style="font-size: 1.8rem; font-weight: bold; color: var(--text-main);">{{ metrics.day_7_return_rate }}%</span>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Day-7 Return</div>
+      </div>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+      Active Community Gaming Hubs: <strong>{{ metrics.active_hubs }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Per-Hub Activity -->
+<div style="margin-top: 2rem;">
+  <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem;">Per-Hub Activity & Grassroots Engagement</h2>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Hub Name</th>
+          <th>City</th>
+          <th style="text-align: right;">Tournaments Run</th>
+          <th style="text-align: right;">Dataset Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in metrics.hub_activity %}
+          <tr>
+            <td><strong>{{ h.hub_name }}</strong></td>
+            <td>{{ h.city }}</td>
+            <td style="text-align: right; color: var(--accent-gold); font-weight: bold;">{{ h.tournaments }}</td>
+            <td style="text-align: right;">
+              <span class="badge {% if h.is_demo %}badge-gold{% else %}badge-green{% endif %}">
+                {% if h.is_demo %}Demo Set{% else %}Live Pilot{% endif %}
+              </span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Metric Definitions Note -->
+<div class="card" style="margin-top: 2rem; background: #0f172a; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+  <strong>Data Governance & Methodology:</strong>
+  All metrics are derived directly from the relational database. Match completion rate is computed as <code>completed_matches / (total_matches - byes)</code>. Demo records carry the explicit <code>is_demo = True</code> attribute to prevent conflation with pilot player accounts.
+</div>
+{% endblock %}

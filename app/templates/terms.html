@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 1.5rem auto; line-height: 1.6;">
+  <h1 style="font-size: 1.6rem; margin-bottom: 1rem;">{{ t('terms_title', locale) }}</h1>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">1. Free Grassroots Competitions</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    All tournaments on GameBridge Ethiopia are completely free to enter. GameBridge does not charge entry fees, process real-money payments, or operate gambling activities. Prizing consists of platform ladder Elo, city rankings, community trophies, and sponsor awards.
+  </p>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">2. Fair Play & Competitive Integrity</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    Players must compete using their own linked accounts. Using chess engines, aimbots, smurf accounts, or submitting fabricated result screenshots is strictly prohibited and results in permanent ladder disqualification.
+  </p>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">3. Append-Only Competition Records</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    Match outcomes, bracket advancements, and Elo events are recorded as immutable business events. While personal identifiers may be deleted upon account closure, mathematical bracket history is retained for competition integrity.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <a href="/tournaments/{{ tournament.slug }}" style="font-size: 0.85rem; color: var(--accent-gold);">&larr; Back to Bracket</a>
+  <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+    <div>
+      <h1 style="font-size: 1.5rem;">Match Room #{{ match.match_number }} (Round {{ match.round_number }})</h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">{{ tournament.name }} &bull; {{ tournament.game_key | upper }}</p>
+    </div>
+    <span class="badge {% if match.status == 'completed' %}badge-green{% elif match.status == 'disputed' %}badge-red{% else %}badge-gold{% endif %}">
+      {{ match.status | upper }}
+    </span>
+  </div>
+</div>
+
+<!-- Match Competitors Card -->
+<div class="card match-card">
+  <div class="match-competitors">
+    <!-- Player 1 -->
+    <div class="match-side">
+      <div style="font-size: 1.25rem; font-weight: bold; color: {% if match.winner_id == match.player1_id %}var(--accent-green){% else %}var(--text-main){% endif %};">
+        {{ p1.display_name if p1 else 'TBD' }}
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);">
+        {% if p1 %}City: {{ p1.city }} &bull; <a href="/p/{{ p1.public_identifier }}" style="color: var(--accent-gold);">Passport</a>{% endif %}
+      </div>
+      {% if match.winner_id == match.player1_id %}
+        <span class="badge badge-green" style="margin-top: 0.5rem;">WINNER</span>
+      {% endif %}
+    </div>
+
+    <!-- VS Divider -->
+    <div class="match-vs">
+      VS
+    </div>
+
+    <!-- Player 2 -->
+    <div class="match-side">
+      <div style="font-size: 1.25rem; font-weight: bold; color: {% if match.winner_id == match.player2_id %}var(--accent-green){% else %}var(--text-main){% endif %};">
+        {{ p2.display_name if p2 else 'TBD' }}
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);">
+        {% if p2 %}City: {{ p2.city }} &bull; <a href="/p/{{ p2.public_identifier }}" style="color: var(--accent-gold);">Passport</a>{% endif %}
+      </div>
+      {% if match.winner_id == match.player2_id %}
+        <span class="badge badge-green" style="margin-top: 0.5rem;">WINNER</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Match Reporting Section -->
+{% if match.status in ['pending', 'scheduled', 'in_progress'] and current_user and current_user.id in [match.player1_id, match.player2_id] %}
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.15rem; margin-bottom: 0.75rem;">{{ t('btn_submit_result', locale) }}</h2>
+
+    <div id="match-msg-box" style="display: none; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; margin-bottom: 1rem;"></div>
+
+    {% if tournament.game_key == 'lichess' %}
+      <!-- Lichess Game Verification -->
+      <form onsubmit="submitLichessMatch(event)">
+        <div class="form-group">
+          <label for="lichess-url">Lichess Game URL or 8-char Game ID</label>
+          <input type="text" id="lichess-url" class="form-input" placeholder="e.g. https://lichess.org/AbCdEfGh" required>
+          <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">
+            Both players' linked Lichess usernames must match the players in the Lichess game.
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">
+            {{ t('btn_confirm_result', locale) }}
+          </button>
+        </div>
+      </form>
+    {% else %}
+      <!-- Screenshot / Manual Reporting -->
+      <form onsubmit="submitScreenshotMatch(event)">
+        <div class="form-group">
+          <label for="claimed-winner">Claimed Winner</label>
+          <select id="claimed-winner" class="form-select">
+            {% if p1 %}<option value="{{ p1.id }}">{{ p1.display_name }} (Player 1)</option>{% endif %}
+            {% if p2 %}<option value="{{ p2.id }}">{{ p2.display_name }} (Player 2)</option>{% endif %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Score (e.g. 1 - 0)</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="number" id="score-p1" class="form-input" value="1" min="0" max="10">
+            <span style="align-self: center;">-</span>
+            <input type="number" id="score-p2" class="form-input" value="0" min="0" max="10">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Score Report</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Dispute Trigger -->
+  <div class="card" style="border-color: rgba(239, 68, 68, 0.4);">
+    <h3 style="font-size: 1rem; color: #f87171;">Need Hub Captain Intervention?</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+      If your opponent disconnected, submitted false evidence, or broke fair-play rules, open a dispute for captain review.
+    </p>
+    <form onsubmit="openDispute(event)">
+      <div class="form-group">
+        <textarea id="dispute-reason" class="form-textarea" placeholder="Explain the issue clearly..." rows="2" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-danger btn-sm">{{ t('btn_report_dispute', locale) }}</button>
+    </form>
+  </div>
+{% elif match.status == 'disputed' %}
+  <div class="card match-state-note"><strong>Result under review</strong><p>A Hub Captain is reviewing the reported result. No further reports can be submitted while the dispute is open.</p></div>
+{% elif match.status in ['pending', 'scheduled', 'in_progress'] %}
+  <div class="card match-state-note"><p>Only the players assigned to this match can report a result or open a dispute.</p>{% if not current_user %}<a class="btn btn-primary btn-sm" href="/login">{{ t('nav_login', locale) }}</a>{% endif %}</div>
+{% endif %}
+
+<!-- Append-Only Match Events Log -->
+<div style="margin-top: 2rem;">
+  <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Append-Only Match Integrity Log</h3>
+  {% if events %}
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      {% for ev in events %}
+        <div style="background: var(--bg-card); border-left: 3px solid var(--accent-gold); padding: 0.6rem 0.85rem; border-radius: 4px; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.75rem;">
+            <span>Event ID: <code>{{ ev.id[:8] }}</code></span>
+            <span>{{ ev.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
+          </div>
+          <div>Outcome: <strong>{{ ev.outcome }}</strong> | Reason: <em>{{ ev.reason }}</em></div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="font-size: 0.85rem; color: var(--text-muted);">No result events recorded yet.</p>
+  {% endif %}
+</div>
+
+<script>
+async function submitLichessMatch(e) {
+  e.preventDefault();
+  const game_link = document.getElementById('lichess-url').value;
+  const msgBox = document.getElementById('match-msg-box');
+  const submitButton = e.currentTarget.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  msgBox.style.display = 'block';
+  msgBox.style.background = 'rgba(59, 130, 246, 0.2)';
+  msgBox.style.color = '#60a5fa';
+  msgBox.innerText = 'Verifying game on Lichess API...';
+
+  try {
+    const res = await fetch('/api/matches/{{ match.id }}/submit-lichess', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ match_id: '{{ match.id }}', winner_id: '{{ match.player1_id }}', game_link })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msgBox.style.background = 'rgba(239, 68, 68, 0.2)';
+      msgBox.style.color = '#f87171';
+      msgBox.innerText = data.detail || 'Lichess verification failed';
+    } else {
+      msgBox.style.background = 'rgba(16, 185, 129, 0.2)';
+      msgBox.style.color = '#34d399';
+      msgBox.innerText = data.message || 'Result verified.';
+      setTimeout(() => window.location.reload(), 1500);
+    }
+  } catch (err) {
+    msgBox.innerText = 'Network error verifying match';
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+async function openDispute(e) {
+  e.preventDefault();
+  const reason = document.getElementById('dispute-reason').value;
+  const submitButton = e.currentTarget.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const res = await fetch('/api/disputes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ match_id: '{{ match.id }}', reason })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Could not open dispute.');
+    showToast(data.message || 'Dispute submitted for review.', 'success');
+    setTimeout(() => window.location.reload(), 700);
+  } catch (err) {
+    showToast(err.message || 'Network error opening dispute.', 'error');
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+</script>
+{% endblock %}

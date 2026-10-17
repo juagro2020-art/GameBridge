@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+      <span class="badge badge-gold" style="font-size: 0.85rem; padding: 0.35rem 0.6rem;">GameBridge 250 Innovation Challenge</span>
+      <h1 style="font-size: 1.85rem; margin-top: 0.5rem;">5-Minute Guided Judge Demonstration</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Complete end-to-end evaluation tour of the Ethiopian Esports Ladder Platform.
+      </p>
+    </div>
+    <div>
+      {% if current_user and current_user.role == 'super_admin' %}
+      <button onclick="resetDemoData()" class="btn btn-outline btn-sm" style="border-color: var(--accent-gold); color: var(--accent-gold);">
+        Reset Demo Dataset
+      </button>
+      {% else %}
+      <p class="admin-note">Demo reset requires a platform administrator. {% if not current_user %}<a href="/login">Sign in</a>{% endif %}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Minute 1 -->
+  <div class="card" style="border-left: 4px solid var(--accent-gold);">
+    <div class="card-header">
+      <h2 style="font-size: 1.15rem;">⏱️ Minute 1: Discover & Register in English or Amharic</h2>
+      <span class="badge badge-gold">Identity & i18n</span>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Experience mobile-first registration designed for Ethiopian gamers with full Amharic (አማርኛ) and Afaan Oromo locale support.
+    </p>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+      <a href="/register" class="btn btn-primary btn-sm">1. Open Registration Form</a>
+      <button onclick="setLanguage('am')" class="btn btn-outline btn-sm">Amharic</button>
+      <button onclick="setLanguage('en')" class="btn btn-outline btn-sm">English</button>
+    </div>
+  </div>
+
+  <!-- Minute 2 -->
+  <div class="card" style="border-left: 4px solid var(--accent-green);">
+    <div class="card-header">
+      <h2 style="font-size: 1.15rem;">⏱️ Minute 2: Official Account Bio-Code Verification</h2>
+      <span class="badge badge-green">Tier A API Plugin</span>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Inspect the Game Adapter plugin system. Players claim external Lichess or Chess.com accounts, receive a single-use code (e.g. <code>GB-4F7K</code>), place it in their official bio, and verify ownership.
+    </p>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+      <a href="/account/link" class="btn btn-primary btn-sm">2. Link & Verify Game Account</a>
+      <a href="/leaderboards" class="btn btn-outline btn-sm">Check Verified Rankings</a>
+    </div>
+  </div>
+
+  <!-- Minute 3 -->
+  <div class="card" style="border-left: 4px solid #3b82f6;">
+    <div class="card-header">
+      <h2 style="font-size: 1.15rem;">⏱️ Minute 3: Enter Daily Cup & Inspect Bracket</h2>
+      <span class="badge badge-blue">Tournaments</span>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Browse free grassroots knockout cups in Addis Ababa or Hawassa. View seeded bracket progression and open an active Match Room.
+    </p>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+      <a href="/tournaments/addis-weekly-cup-2" class="btn btn-primary btn-sm">3. Open Live Cup #2 (Registration Open)</a>
+      <a href="/tournaments/bole-grassroots-cup-1" class="btn btn-outline btn-sm">Inspect Finished Cup #1 Bracket</a>
+    </div>
+  </div>
+
+  <!-- Minute 4 -->
+  <div class="card" style="border-left: 4px solid var(--accent-gold);">
+    <div class="card-header">
+      <h2 style="font-size: 1.15rem;">Minute 4: Match Result and Elo</h2>
+      <span class="badge badge-gold">Match Verification</span>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Live reports require a real Lichess game and verified player accounts. The completed demo match below shows its persisted result event; there is no simulated success shortcut.
+    </p>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+      {% if demo_match_id %}<a href="/matches/{{ demo_match_id }}" class="btn btn-primary btn-sm">4. Inspect completed Match Room</a>{% else %}<a href="/tournaments/bole-grassroots-cup-1" class="btn btn-primary btn-sm">4. Inspect completed Cup</a>{% endif %}
+    </div>
+  </div>
+
+  <!-- Minute 5 -->
+  <div class="card" style="border-left: 4px solid #a855f7;">
+    <div class="card-header">
+      <h2 style="font-size: 1.15rem;">Minute 5: Captain Review and Player Passport</h2>
+      <span class="badge badge-purple">Trust & Growth</span>
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Open the Hub Captain Dashboard to review the prepared demo dispute and record an audited decision. Then view the public Gamer Passport and its generated share card without Telegram login.
+    </p>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+      <a href="/captain" class="btn btn-primary btn-sm">5a. Open Hub Captain Dashboard</a>
+      <a href="/tournaments/captain-review-demo" class="btn btn-outline btn-sm">5b. Inspect Prepared Dispute</a>
+      <a href="/p/et-almaz_a" class="btn btn-outline btn-sm">5c. View Top Player Passport (Almaz)</a>
+      <a href="/analytics" class="btn btn-outline btn-sm">5d. View Analytics</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+async function resetDemoData() {
+  if (!confirm('Safely wipe demo dataset and re-seed clean demonstration state?')) return;
+  try {
+    const res = await fetch('/api/demo/reset', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Could not reset demo data.');
+    showToast(data.message || 'Demo data reset successfully.', 'success');
+    setTimeout(() => window.location.reload(), 700);
+  } catch (err) {
+    showToast(err.message || 'Network error resetting demo data.', 'error');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 1.5rem auto;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">{{ t('btn_verify_account', locale) }}</h2>
+      <span class="badge badge-green">Official Verification</span>
+    </div>
+
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      Link your official external game profile to display verified skill ratings and qualify for municipal ladders.
+    </p>
+
+    <div id="link-status-box" role="status" aria-live="polite" style="display: none; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.5rem;"></div>
+
+    <!-- Step 1: Choose Game & Username -->
+    <div id="step-1">
+      <form onsubmit="handleRequestLink(event)">
+        <div class="form-group">
+          <label for="game-select">{{ t('label_game', locale) }}</label>
+          <select id="game-select" class="form-select">
+            <option value="lichess" selected>Lichess.org (Tier A API-Verified)</option>
+            <option value="chess_com">Chess.com (Tier A API-Verified)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="external-username">External Account Username</label>
+          <input type="text" id="external-username" class="form-input" placeholder="e.g. desta_ethiopia" required>
+        </div>
+
+        <label class="consent-check">
+          <input id="account-consent" type="checkbox" required>
+          <span><strong>Account Linking Consent:</strong> I own this external game account and consent to GameBridge checking its public ratings and profile bio.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Generate Verification Code</button>
+      </form>
+    </div>
+
+    <!-- Step 2: Verification Instructions & Check -->
+    <div id="step-2" style="display: none; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.5rem;">Step 2: Place Code in Bio</h3>
+      
+      <p style="font-size: 0.9rem; margin-bottom: 0.75rem;">
+        Copy the code below and place it anywhere in your public profile bio:
+      </p>
+
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+        <code id="display-code" style="font-size: 1.4rem; font-weight: bold; background: #0f172a; padding: 0.5rem 1rem; border-radius: 6px; color: var(--accent-gold); border: 1px dashed var(--accent-gold);">GB-XXXX</code>
+        <button type="button" onclick="copyVerificationCode()" class="btn btn-outline btn-sm">Copy</button>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button id="btn-verify-now" onclick="triggerVerify()" class="btn btn-success" style="flex: 1;">
+          🔍 Check Ownership
+        </button>
+      </div>
+      <p class="verification-note">Ownership is confirmed only after the selected game provider verifies the code in the public profile bio. Demo data does not bypass this check.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentGameAccountId = null;
+let currentCode = null;
+
+async function handleRequestLink(e) {
+  e.preventDefault();
+  const game_key = document.getElementById('game-select').value;
+  const external_username = document.getElementById('external-username').value;
+  const submitButton = e.currentTarget.querySelector('[type="submit"]');
+  const statusBox = document.getElementById('link-status-box');
+  statusBox.style.display = 'none';
+  submitButton.disabled = true;
+
+  try {
+    const res = await fetch('/api/games/link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game_key, external_username, consent: document.getElementById('account-consent').checked })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      statusBox.style.background = 'rgba(239, 68, 68, 0.2)';
+      statusBox.style.color = '#f87171';
+      statusBox.innerText = data.detail || 'Failed to request link';
+      statusBox.style.display = 'block';
+    } else {
+      currentGameAccountId = data.game_account_id;
+      currentCode = data.verification_code;
+      document.getElementById('display-code').innerText = currentCode;
+      document.getElementById('step-2').style.display = 'block';
+      showToast('Verification code generated. Add it to your public profile bio.', 'success');
+    }
+  } catch (err) {
+    statusBox.innerText = 'Network error requesting link';
+    statusBox.style.display = 'block';
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+async function copyVerificationCode() {
+  try {
+    await navigator.clipboard.writeText(currentCode);
+    showToast('Verification code copied.', 'success');
+  } catch (err) {
+    showToast('Could not copy the code. Select it and copy manually.', 'error');
+  }
+}
+
+async function triggerVerify() {
+  const statusBox = document.getElementById('link-status-box');
+  statusBox.style.display = 'block';
+  statusBox.style.background = 'rgba(59, 130, 246, 0.2)';
+  statusBox.style.color = '#60a5fa';
+  statusBox.innerText = 'Checking official API for bio verification...';
+
+  try {
+    const res = await fetch(`/api/games/verify/${currentGameAccountId}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      statusBox.style.background = 'rgba(239, 68, 68, 0.2)';
+      statusBox.style.color = '#f87171';
+      statusBox.innerText = data.detail || 'Verification code not found in bio.';
+    } else {
+      statusBox.style.background = 'rgba(16, 185, 129, 0.2)';
+      statusBox.style.color = '#34d399';
+      statusBox.innerText = '✓ ' + data.message;
+      setTimeout(() => window.location = '/dashboard', 1500);
+    }
+  } catch (err) {
+    statusBox.innerText = 'Network error checking verification';
+  }
+}
+
+</script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">LOCAL CUPS / OPEN BRACKETS</p>
+    <h1>{{ t('nav_tournaments', locale) }}</h1>
+    <p>
+      Grassroots single-elimination cups across Ethiopian gaming hubs. Free to enter.
+    </p>
+  </div>
+  {% if current_user and current_user.role in ['hub_captain', 'super_admin'] %}
+    <a href="/captain" class="btn btn-primary btn-sm">+ Create Daily Cup</a>
+  {% endif %}
+</div>
+
+<form method="GET" action="/tournaments" class="filter-bar tournament-filters">
+  <div class="form-group"><label for="tournament-search">{{ t('label_search', locale) }}</label><input id="tournament-search" class="form-input" type="search" name="q" value="{{ search_query }}" placeholder="{{ t('placeholder_tournament_search', locale) }}"></div>
+  <div class="form-group"><label for="tournament-city">{{ t('label_city', locale) }}</label><select class="form-select" id="tournament-city" name="city">
+    <option value="All" {% if selected_city == 'All' %}selected{% endif %}>{{ t('label_all', locale) }}</option>
+    <option value="Addis Ababa" {% if selected_city == 'Addis Ababa' %}selected{% endif %}>Addis Ababa</option>
+    <option value="Hawassa" {% if selected_city == 'Hawassa' %}selected{% endif %}>Hawassa</option>
+  </select></div>
+  <div class="form-group"><label for="tournament-game">{{ t('label_game', locale) }}</label><select class="form-select" id="tournament-game" name="game">
+    <option value="All" {% if selected_game == 'All' %}selected{% endif %}>{{ t('label_all', locale) }}</option>
+    <option value="lichess" {% if selected_game == 'lichess' %}selected{% endif %}>Lichess</option>
+    <option value="chess_com" {% if selected_game == 'chess_com' %}selected{% endif %}>Chess.com</option>
+  </select></div>
+  <div class="form-group"><label for="tournament-status">{{ t('label_status', locale) }}</label><select class="form-select" id="tournament-status" name="status_filter">
+    <option value="All" {% if selected_status == 'All' %}selected{% endif %}>{{ t('label_all', locale) }}</option>
+    <option value="registration_open" {% if selected_status == 'registration_open' %}selected{% endif %}>{{ t('status_registration_open', locale) }}</option>
+    <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>{{ t('status_in_progress', locale) }}</option>
+    <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>{{ t('status_completed', locale) }}</option>
+    <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>{{ t('status_cancelled', locale) }}</option>
+  </select></div>
+  <button class="btn btn-primary" type="submit">{{ t('label_search', locale) }}</button>
+</form>
+
+<div class="grid">
+  {% for tournament in tournaments %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">{{ tournament.name }}</h3>
+        <span class="badge {% if tournament.status == 'completed' %}badge-gray{% elif tournament.status == 'in_progress' %}badge-gold{% else %}badge-green{% endif %}">
+          {{ tournament.status | replace('_', ' ') | title }}
+        </span>
+      </div>
+
+      <p class="tournament-meta">
+        {{ tournament.city }} &bull; {{ tournament.game_key | upper }} / {{ tournament.mode | title }}
+      </p>
+
+      <p style="font-size: 0.9rem; line-height: 1.4;">
+        {{ tournament.description or 'Daily grassroots knockout bracket for local community bragging rights and ladder Elo.' }}
+      </p>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          Capacity: {{ tournament.max_participants }} max
+        </span>
+        <a href="/tournaments/{{ tournament.slug }}" class="btn btn-primary btn-sm">
+          {% if tournament.status == 'registration_open' %}
+            {{ t('btn_join_tournament', locale) }}
+          {% else %}
+            View Bracket
+          {% endif %}
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 2rem;">
+      <p style="color: var(--text-muted);">No tournaments currently scheduled.</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: gamebridge-web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - DATABASE_URL=postgresql+asyncpg://gamebridge:gamebridge_secret@db:5432/gamebridge_db
+      - SYNC_DATABASE_URL=postgresql://gamebridge:gamebridge_secret@db:5432/gamebridge_db
+      - SECRET_KEY=replace-with-secure-key-in-prod
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME:-GameBridgeEthBot}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET:-secret123}
+      - DEMO_MODE=True
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+
+  db:
+    image: postgres:16-alpine
+    container_name: gamebridge-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=gamebridge
+      - POSTGRES_PASSWORD=gamebridge_secret
+      - POSTGRES_DB=gamebridge_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gamebridge -d gamebridge_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  uploads_data:

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="{{ locale or 'en' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ t('app_name', locale) }}{% endblock %} — {{ t('app_tagline', locale) }}</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0b0e0d">
+  <meta name="description" content="{{ t('hero_subtitle', locale) }}">
+  {% block og_tags %}
+  <meta property="og:title" content="{{ t('app_name', locale) }}">
+  <meta property="og:description" content="{{ t('app_tagline', locale) }}">
+  <meta property="og:type" content="website">
+  {% endblock %}
+  <script src="/static/js/htmx.min.js"></script>
+</head>
+<body>
+  {% if is_demo %}
+  <div class="demo-banner" role="note">
+    <span>{{ t('demo_notice', locale) }}</span>
+    <a href="/judge">{{ t('nav_judge', locale) }}</a>
+  </div>
+  {% endif %}
+
+  <nav class="navbar">
+    <a href="/" class="brand">
+      <span class="brand-mark" aria-hidden="true">GB</span>
+      <span>GameBridge</span>
+    </a>
+
+    <details class="nav-menu">
+      <summary aria-label="{{ t('nav_menu', locale) }}"><span class="menu-bars" aria-hidden="true"></span><span class="menu-label">{{ t('nav_menu', locale) }}</span></summary>
+      <div class="nav-links">
+        <a href="/tournaments">{{ t('nav_tournaments', locale) }}</a>
+        <a href="/leaderboards">{{ t('nav_leaderboards', locale) }}</a>
+
+        {% if current_user %}
+          <a href="/dashboard">{{ t('nav_dashboard', locale) }}</a>
+          {% if current_user.role in ['hub_captain', 'super_admin'] %}
+            <a href="/captain">{{ t('nav_captain', locale) }}</a>
+          {% endif %}
+        {% endif %}
+
+        <a href="/judge">{{ t('nav_judge', locale) }}</a>
+        <a href="/analytics">{{ t('nav_analytics', locale) }}</a>
+
+        <label class="language-control">
+          <span class="sr-only">{{ t('btn_switch_language', locale) }}</span>
+          <select onchange="setLanguage(this.value)" class="language-select" aria-label="{{ t('btn_switch_language', locale) }}">
+            <option value="en" {% if locale == 'en' %}selected{% endif %}>EN</option>
+            <option value="am" {% if locale == 'am' %}selected{% endif %}>አማ</option>
+            <option value="om" {% if locale == 'om' %}selected{% endif %}>OM</option>
+          </select>
+        </label>
+
+        {% if current_user %}
+          <button onclick="fetch('/api/auth/logout', {method:'POST'}).then(() => window.location='/login')" class="btn btn-outline btn-sm">
+            {{ t('nav_logout', locale) }}
+          </button>
+        {% else %}
+          <a href="/login" class="btn btn-primary btn-sm">{{ t('nav_login', locale) }}</a>
+        {% endif %}
+      </div>
+    </details>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <div id="gb-toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <a href="/" class="brand footer-brand"><span class="brand-mark" aria-hidden="true">GB</span><span>GameBridge</span></a>
+      <div class="footer-links">
+        <a href="/terms">{{ t('terms_title', locale) }}</a>
+        <a href="/privacy">{{ t('privacy_title', locale) }}</a>
+        <a href="/judge">{{ t('nav_judge', locale) }}</a>
+      </div>
+      <p>&copy; 2026 GameBridge Ethiopia</p>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js?v=2"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

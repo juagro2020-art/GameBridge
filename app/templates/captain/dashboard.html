@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <span class="badge badge-gold" style="margin-bottom: 0.25rem;">Authorized Hub Captain</span>
+  <h1 style="font-size: 1.6rem;">{{ t('nav_captain', locale) }}</h1>
+  <p style="color: var(--text-muted); font-size: 0.9rem;">
+    Manage local grassroots cups, inspect match evidence, and resolve participant disputes.
+  </p>
+</div>
+
+<!-- Pending Disputes Queue -->
+<div class="card" style="margin-bottom: 2rem; border-color: #ef4444;">
+  <div class="card-header">
+    <h2 class="card-title" style="color: #f87171;">⚠️ Pending Dispute Queue ({{ disputes | length }})</h2>
+    <span class="badge badge-red">Requires Decision</span>
+  </div>
+
+  {% if disputes %}
+    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
+      {% for d in disputes %}
+        <div style="background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+            <strong>Dispute #{{ d.id[:8] }}</strong>
+            <span class="badge badge-red">{{ d.status }}</span>
+          </div>
+
+          <p style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+            Issue: <em>{{ d.reason }}</em>
+          </p>
+
+          {% set evidence_files = evidence_by_match.get(d.match_id, []) %}
+          <details class="evidence-review">
+            <summary>{{ t('captain_evidence', locale) }} ({{ evidence_files | length }})</summary>
+            {% if evidence_files %}
+              <div class="evidence-list">
+                {% for evidence in evidence_files %}
+                  <a href="/api/matches/{{ d.match_id }}/evidence/{{ evidence.id }}" target="_blank" rel="noopener">{{ t('captain_view_evidence', locale) }} {{ loop.index }}</a>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p>{{ t('captain_no_evidence', locale) }}</p>
+            {% endif %}
+          </details>
+
+          <form onsubmit="handleResolveDispute(event, '{{ d.id }}')" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 150px;">
+              <label style="font-size: 0.75rem; color: var(--text-muted);">Captain Ruling</label>
+              <select id="decision-{{ d.id }}" class="form-select" style="padding: 0.4rem;">
+                <option value="confirm_p1">Confirm Player 1 Win</option>
+                <option value="confirm_p2">Confirm Player 2 Win</option>
+                <option value="forfeit_p1">Forfeit Player 1</option>
+                <option value="forfeit_p2">Forfeit Player 2</option>
+              </select>
+            </div>
+
+            <div style="flex: 2; min-width: 200px;">
+              <label style="font-size: 0.75rem; color: var(--text-muted);" for="reason-{{ d.id }}">Audited Justification Reason</label>
+              <input type="text" id="reason-{{ d.id }}" class="form-input" style="padding: 0.4rem;" placeholder="e.g. Screenshot evidence reviewed" required>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-sm">{{ t('btn_resolve_dispute', locale) }}</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); font-size: 0.9rem;">No unresolved disputes pending in your hub.</p>
+  {% endif %}
+</div>
+
+<!-- Create Tournament Form -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-header">
+    <h2 class="card-title">Create New Hub Daily Cup</h2>
+    <span class="badge badge-green">Free Cup</span>
+  </div>
+
+  <form onsubmit="handleCreateTournament(event)">
+    <div class="grid" style="margin-top: 0;">
+      <div class="form-group">
+        <label>Tournament Name</label>
+        <input type="text" id="cup-name" class="form-input" placeholder="e.g. Bole Weekend Cup #3" required>
+      </div>
+
+      <div class="form-group">
+        <label>City & Venue</label>
+        <select id="cup-city" class="form-select">
+          <option value="Addis Ababa" selected>Addis Ababa (Bole Hub)</option>
+          <option value="Hawassa">Hawassa (Lakeside Hub)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top: 0;">
+      <div class="form-group">
+        <label>Game Title</label>
+        <select id="cup-game" class="form-select">
+          <option value="lichess" selected>Lichess Rapid</option>
+          <option value="chess_com">Chess.com Rapid</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Max Players (Single Elimination)</label>
+        <select id="cup-max" class="form-select">
+          <option value="8">8 Players (3 Rounds)</option>
+          <option value="16" selected>16 Players (4 Rounds)</option>
+          <option value="32">32 Players (5 Rounds)</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Create Tournament & Open Registration</button>
+  </form>
+</div>
+
+<!-- Active Hub Tournaments -->
+<div style="margin-top: 2rem;">
+  <h2 style="font-size: 1.25rem; margin-bottom: 0.75rem;">Hub Tournaments</h2>
+  <div class="grid">
+    {% for t in tournaments %}
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">{{ t.name }}</h3>
+          <span class="badge badge-gold">{{ t.status }}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ t.city }} &bull; {{ t.game_key | upper }}</p>
+        <a href="/tournaments/{{ t.slug }}" class="btn btn-outline btn-sm" style="align-self: flex-start;">Inspect Bracket</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+async function handleResolveDispute(e, disputeId) {
+  e.preventDefault();
+  const decision = document.getElementById(`decision-${disputeId}`).value;
+  const reason = document.getElementById(`reason-${disputeId}`).value;
+
+  try {
+    const res = await fetch(`/api/disputes/${disputeId}/resolve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dispute_id: disputeId, decision, reason })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Dispute resolved and recorded in the audit log.', 'success');
+      setTimeout(() => window.location.reload(), 700);
+    } else {
+      showToast(data.detail || 'Failed to resolve dispute', 'error');
+    }
+  } catch (err) {
+    showToast('Network error resolving dispute.', 'error');
+  }
+}
+
+async function handleCreateTournament(e) {
+  e.preventDefault();
+  const name = document.getElementById('cup-name').value;
+  const city = document.getElementById('cup-city').value;
+  const game_key = document.getElementById('cup-game').value;
+  const max_participants = parseInt(document.getElementById('cup-max').value);
+
+  const startTime = new Date(Date.now() + 3600 * 1000 * 3).toISOString();
+  const regDeadline = new Date(Date.now() + 3600 * 1000 * 2).toISOString();
+
+  try {
+    const res = await fetch('/api/tournaments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        game_key,
+        mode: 'rapid',
+        city,
+        max_participants,
+        start_time: startTime,
+        registration_deadline: regDeadline
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.location = `/tournaments/${data.slug}`;
+    } else {
+      showToast(data.detail || 'Failed to create cup', 'error');
+    }
+  } catch (err) {
+    showToast('Network error creating tournament.', 'error');
+  }
+}
+</script>
+{% endblock %}

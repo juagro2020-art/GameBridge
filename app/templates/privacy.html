@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 1.5rem auto; line-height: 1.6;">
+  <h1 style="font-size: 1.6rem; margin-bottom: 1rem;">{{ t('privacy_title', locale) }}</h1>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">1. Data Minimization</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    We collect only the minimum data necessary for tournament matchmaking: chosen username, city, preferred language, and linked public external game IDs. We do not collect government identity cards, exact birth dates, or payment details.
+  </p>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">2. Minors Safeguarding</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    GameBridge does not permit real-money gambling, adult content, or predatory microtransactions. Players under 18 participate in free community gaming with parent/guardian guidance.
+  </p>
+
+  <h2 style="font-size: 1.15rem; color: var(--accent-gold); margin-top: 1rem;">3. Data Deletion & Export</h2>
+  <p style="font-size: 0.9rem; color: var(--text-muted);">
+    Users may request complete account deletion or data export by contacting the platform administrator. Public passport URLs are immediately revoked upon account deactivation.
+  </p>
+</div>
+{% endblock %}
